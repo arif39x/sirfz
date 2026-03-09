@@ -1,93 +1,76 @@
 # SIRFZ
 
-**Ephemeral State-Machine Chat Terminal**
+![Logo Description](asset/Logo.jpeg)
 
-Zero-filesystem. Zero-persistence. Memory-locked. Self-destructing. The ultimate peer-to-peer encrypted group chat terminal engineered for aggressive forensic deniability. 
+Ephemeral State-Machine Chat Terminal
 
-When you launch SIRFZ, you enter a secure shell mimicking a root environment (`[root@sirfz]~#`). The architecture combines a secure hardware-level Rust hypervisor with a highly concurrent zero-copy Go transport mesh.
+SIRFZ is a peer-to-peer, encrypted group chat terminal engineered for absolute forensic deniability. It operates entirely without a filesystem footprint, maintaining zero persistent state.
 
----
+## What it is
 
-## ⚡ Architecture
+SIRFZ is not a normal chat application. It is a highly specialized piece of software that forcibly links a low-level Rust hardware security hypervisor with a highly concurrent, zero-copy Go transport mesh. It runs directly in your terminal, providing a secure shell environment (mimicking a root prompt) where operators can exchange messages that exist only in locked RAM.
 
-SIRFZ dynamically links a Rust hypervisor with a Go shared library at runtime. 
+## What it can do
 
-```text
-SIRFZ/
-├── Makefile             # Unified build system (make all, make run-server, make run-client)
-├── transport/           # Go 1.21 — Yamux/mTLS zero-copy multiplexed transport (→ libsirfz.so)
-│   ├── clib/            # CGo FFI exports (StartNode, SendMessage, RecvMessage)
-│   ├── internal/
-│   │   ├── auth/        # in-memory TLS 1.3, Ephemeral Ed25519 identity generation
-│   │   ├── transport/   # HostRouter — 64-slot fd-table, pool-backed O(1) Broadcast
-│   │   └── tunnel/      # Yamux session setup, sync.Pool zero-copy relay & zeroize
-│
-└── hypervisor/          # Rust 1.70+ — Security hypervisor & Terminal UI (→ sirfz binary)
-    └── src/
-        ├── hardening/   # mlockall, prctl, ptrace watchdog, seccomp, namespaces, termios
-        ├── ffi/         # libloading dynamic FFI loader for libsirfz.so
-        ├── crypto/      # Ed25519/X25519 ephemeral identity, Double-Ratchet AEAD
-        ├── chat/        # send_loop, recv_loop, raw terminal event orchestrator
-        ├── secrets/     # Secure memory registry, wipe-on-shutdown
-        └── shutdown.rs  # Volatile wipe + compiler_fence + munlockall
-```
+- Establish a bidirectional, multiplexed peer-to-peer communication mesh.
+- Forward and broadcast text messages to all connected peers with near-zero latency.
+- Provide end-to-end encryption using a Double-Ratchet mechanism.
+- Self-destruct instantaneously upon exit, intercepting standard termination signals to wipe all cryptographic material before the OS regains control.
 
----
+## How it does it
 
-## 🛡️ Security Properties
+The system boots in three rigorous stages:
 
-Every security primitive in SIRFZ is designed to ensure that if the machine is seized while running, or inspected after shutdown, **no cryptographic state or message traces exist**.
+1. **Host Environment Isolation**: The Rust hypervisor leverages Linux kernel primitives to harden the process. It drops the process into a new user and mount namespace, disables core dumps via `prctl`, and actively monitors `/proc/self/status` to ensure no foreign debuggers are attached. To prevent the OS from ever writing keys to the swap file, it explicitly locks the process memory using `mlockall`.
+2. **Ephemeral Identity Generation**: The Go shared library generates Ed25519 and X25519 keypairs purely in RAM. It never writes to disk. It uses these keys to establish a mutual TLS 1.3 (mTLS) session over a custom Yamux multiplexer.
+3. **Hardware Input Interception**: The terminal UI bypasses standard OS line-buffering routines. It forces the terminal into raw mode (`termios` modifications), ensuring keystrokes flow directly from hardware interrupt into the locked memory arena, bypassing standard shell history or caching mechanisms.
 
-| Property | Mechanism |
-|----------|-----------|
-| **Memory confinement** | `mlockall(MCL_CURRENT \| MCL_FUTURE)` prevents keys from hitting swap. |
-| **Forensic nullification** | `prctl(PR_SET_DUMPABLE, 0)` + `setrlimit(RLIMIT_CORE, 0)` disables core dumps. |
-| **Debugger rejection** | `/proc/self/status` TracerPid check at startup. Exits if attached. |
-| **Tracer occupancy** | The watchdog fork intentionally consumes the kernel's sole `ptrace` slot. |
-| **Syscall restriction** | Strict `seccomp` allowlist (Trap mode) for networking only. |
-| **Namespace isolation** | `unshare(CLONE_NEWUSER \| CLONE_NEWNS)` detaches from host namespace. |
-| **Zero persistence** | Ed25519 & X25519 keys generated purely in RAM. No disk I/O. |
-| **Encrypted transport** | Double-Ratchet (HKDF-SHA256 + ChaCha20-Poly1305) over Yamux/mTLS 1.3. |
-| **Hardware UI input** | Raw `termios` configuration disables OS buffering (`ICANON` + `ECHO` = 0). |
-| **Entropic destruction** | `write_volatile(0x00)` + `compiler_fence(SeqCst)` on `SIGINT`/`SIGTERM` or `exit`. |
+Messages transmitted across the wire are encrypted via ChaCha20-Poly1305, with keys continuously rolling forward via a HKDF-SHA256 Key Derivation Function (KDF) chain.
 
----
+## Why this is a better approach for anonymity
 
-## 🚀 Quick Start Guide
+Traditional secure messengers (like Signal, Session, or Matrix) solve transmission security but fail at endpoint security. They rely on local databases, persistent configuration files, and operating systems that freely page application memory to disk. If an adversary seizes the physical hardware while those applications are running or after they have closed, forensic analysis of the hard drive or swap partition can routinely yield encryption keys, contact lists, and message histories.
+
+SIRFZ assumes the host operating system is hostile. By never touching the disk—not for caching, not for configuration, not for identity generation—it eliminates the endpoint footprint entirely. It operates as a mathematical state machine that exists only so long as power flows through the RAM modules.
+
+## How it protects your anonymity
+
+Anonymity in SIRFZ is not achieved through routing (like Tor or I2P), but through absolute state deniability.
+
+- **No Identities**: You do not have a username, an account, or a persistent phone number. Your identity is a mathematical keypair generated milliseconds after you launch the binary.
+- **No History**: Because there is no database, there is no history. The moment a message scrolls off your screen or you exit the application, it ceases to exist.
+- **Entropic Destruction**: When you type `exit` or press `Ctrl+C`, the hypervisor intercepts the command. Before allowing the process to terminate, it executes a volatile memory wipe (writing `0x00`) over all encryption keys and enforces a compiler fence to prevent optimization reordering. Only after the memory is mathematically scrubbed does it unlock the RAM and exit.
+
+If the machine is seized, unplugged, or inspected, there is nothing to find.
+
+## Quick Start Guide
 
 ### Prerequisites
-- **Go** (for compiling the transport layer)
-- **Rust / Cargo** (for compiling the hypervisor)
-- **Make** (for using the unified build scripts)
 
-### 1. Build Both Components
-From the root structure:
+- Go 1.21+
+- Rust / Cargo 1.70+
+- Make
+
+### Building
+
 ```bash
 make all
 ```
-This automatically builds the Go `libsirfz.so` (3.8MB) and the Rust `sirfz` binary (456KB stripped), copying the `.so` next to the binary in `hypervisor/target/release/`.
 
-### 2. Start the Host Node (Server)
-The first peer initializes the mesh.
+### Running the Host (Server)
+
 ```bash
 make run-server
 ```
-You will see the red hacker skull ASCII art, and the server will listen on `0.0.0.0:9000`.
 
-### 3. Connect a Client Node (Peer)
-Open a separate terminal on the same network:
+The application will listen on `0.0.0.0:9000`
+
+### Running the Peer (Client)
+
+Open a separate terminal and run:
+
 ```bash
 make run-client
 ```
-The terminal connects to `127.0.0.1:9000` (update `Makefile` if connecting remote).
 
-### 4. Engaging Network
-Just start typing at the `[root@sirfz]~#` prompt. Incoming messages will safely format in bright green `[PEER]` text above your active line.
-
-### 5. Self-Destruct
-Type `exit`, `quit`, or press `Ctrl+C`. The hypervisor intercepts this, zeroes all key arenas, unlocks memory, and safely exits. No logs. No history.
-
----
-
-## 🚫 Zero-Comment Policy
-By design, all codebase logic in SIRFZ is self-documenting through Human-Semantic Naming. No prose, no ghost code.
+The peer connects to `127.0.0.1:9000`. Once connected, type at the prompt to broadcast encrypted messages to the mesh. Type `exit` to trigger the secure shutdown sequence.
