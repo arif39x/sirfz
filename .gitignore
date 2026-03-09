@@ -1,0 +1,33 @@
+# Compiled Object files, Static and Dynamic libs (Shared Architecture)
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.h
+
+# Rust (Hypervisor)
+/hypervisor/target/
+**/*.rs.bk
+# Cargo.lock is optional to ignore for binaries, but we'll include it for a clean sweep if desired,
+# though we usually commit Cargo.lock for reproducibility. We will NOT ignore Cargo.lock.
+
+# Go (Transport)
+/transport/bin/
+/transport/vendor/
+/transport/go.sum
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
