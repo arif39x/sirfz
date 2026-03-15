@@ -1,14 +1,14 @@
-# SIRFZ
+# sirfz
 
 ![Logo Description](asset/Logo.jpeg)
 
 Ephemeral State-Machine Chat Terminal
 
-SIRFZ is a peer-to-peer, encrypted group chat terminal engineered for absolute forensic deniability. It operates entirely without a filesystem footprint, maintaining zero persistent state.
+sirfz is a peer-to-peer, encrypted group chat terminal engineered for absolute forensic deniability. It operates entirely without a filesystem footprint, maintaining zero persistent state.
 
 ## What it is
 
-SIRFZ is not a normal chat application. It is a highly specialized piece of software that forcibly links a low-level Rust hardware security hypervisor with a highly concurrent, zero-copy Go transport mesh. It runs directly in your terminal, providing a secure shell environment (mimicking a root prompt) where operators can exchange messages that exist only in locked RAM.
+sirfz is not a normal chat application. It is a highly specialized piece of software that forcibly links a low-level Rust hardware security hypervisor with a highly concurrent, zero-copy Go transport mesh. It runs directly in your terminal, providing a secure shell environment (mimicking a root prompt) where operators can exchange messages that exist only in locked RAM.
 
 ## What it can do
 
