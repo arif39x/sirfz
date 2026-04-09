@@ -1,6 +1,9 @@
+#[cfg(not(debug_assertions))]
 use std::fs;
+#[cfg(not(debug_assertions))]
 use std::process;
 
+#[cfg(not(debug_assertions))]
 pub fn block_debugger() {
     let status = fs::read_to_string("/proc/self/status").unwrap_or_default();
     for line in status.lines() {
@@ -16,4 +19,9 @@ pub fn block_debugger() {
             return;
         }
     }
+}
+
+#[cfg(debug_assertions)]
+pub fn block_debugger() {
+    eprintln!("\x1b[1;33m[WARN] Debug mode enabled: Anti-tamper/Debugger checks bypassed.\x1b[0m");
 }

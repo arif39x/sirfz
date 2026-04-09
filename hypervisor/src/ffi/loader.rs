@@ -1,14 +1,14 @@
 use libloading::{Library, Symbol};
 use std::ffi::CString;
 
-use super::types::{FnStartNode, FnSendMessage, FnRecvMessage, FnStopNode};
+use super::types::{FnRecvMessage, FnSendMessage, FnStartNode, FnStopNode};
 
 pub struct LoadedSymbols {
     pub _lib: Library,
-    pub start_node:   FnStartNode,
+    pub start_node: FnStartNode,
     pub send_message: FnSendMessage,
     pub recv_message: FnRecvMessage,
-    pub stop_node:    FnStopNode,
+    pub stop_node: FnStopNode,
 }
 
 impl LoadedSymbols {
@@ -32,13 +32,28 @@ impl LoadedSymbols {
             *sym
         };
 
-        Ok(Self { _lib: lib, start_node, send_message, recv_message, stop_node })
+        Ok(Self {
+            _lib: lib,
+            start_node,
+            send_message,
+            recv_message,
+            stop_node,
+        })
     }
 
-    pub fn start_node(&self, is_server: bool, addr: &str) -> Result<i32, Box<dyn std::error::Error>> {
+    pub fn start_node(
+        &self,
+        is_server: bool,
+        addr: &str,
+        auth_key: &[u8; 32],
+    ) -> Result<i32, Box<dyn std::error::Error>> {
         let c_addr = CString::new(addr)?;
         let handle = unsafe {
-            (self.start_node)(if is_server { 1 } else { 0 }, c_addr.as_ptr())
+            (self.start_node)(
+                if is_server { 1 } else { 0 },
+                c_addr.as_ptr(),
+                auth_key.as_ptr(),
+            )
         };
         if handle < 0 {
             return Err("StartNode returned error".into());

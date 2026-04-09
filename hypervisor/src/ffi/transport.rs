@@ -9,9 +9,14 @@ pub struct TransportHandle {
 }
 
 impl TransportHandle {
-    pub fn load(lib_path: &str, is_server: bool, addr: &str) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn load(
+        lib_path: &str,
+        is_server: bool,
+        addr: &str,
+        auth_key: &[u8; 32],
+    ) -> Result<Self, Box<dyn std::error::Error>> {
         let syms = LoadedSymbols::open(lib_path)?;
-        let node_handle = syms.start_node(is_server, addr)? as c_int;
+        let node_handle = syms.start_node(is_server, addr, auth_key)? as c_int;
 
         Ok(Self { syms, node_handle })
     }

@@ -3,12 +3,13 @@ package main
 import (
 	"net"
 
+	"sirfz/internal/auth"
 	"sirfz/internal/transport"
 
 	"github.com/hashicorp/yamux"
 )
 
-func startServer(addr string) int32 {
+func startServer(addr string, authKey []byte) int32 {
 	router := transport.NewHostRouter()
 
 	yCfg := yamux.DefaultConfig()
@@ -24,6 +25,10 @@ func startServer(addr string) int32 {
 			conn, err := ln.Accept()
 			if err != nil {
 				return
+			}
+			if err := auth.SecureHandshakeServer(conn, authKey); err != nil {
+				conn.Close()
+				continue
 			}
 			session, err := yamux.Server(conn, yCfg)
 			if err != nil {
@@ -50,12 +55,17 @@ func acceptStreams(sess *yamux.Session, router *transport.HostRouter) {
 	}
 }
 
-func startClient(addr string) int32 {
+func startClient(addr string, authKey []byte) int32 {
 	yCfg := yamux.DefaultConfig()
 	yCfg.EnableKeepAlive = true
 
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
+		return -1
+	}
+
+	if err := auth.SecureHandshakeClient(conn, authKey); err != nil {
+		conn.Close()
 		return -1
 	}
 

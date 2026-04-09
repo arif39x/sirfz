@@ -1,19 +1,19 @@
 use libc::{
-    mount, umount2, unshare, CLONE_NEWNS, CLONE_NEWUSER, MNT_DETACH,
-    MS_NOSUID, MS_NOEXEC, MS_NODEV, MS_PRIVATE, MS_REC,
+    mount, umount2, unshare, CLONE_NEWNS, CLONE_NEWUSER, MNT_DETACH, MS_NODEV, MS_NOEXEC,
+    MS_NOSUID, MS_PRIVATE, MS_REC,
 };
 use std::ffi::CString;
 use std::fs;
-use std::process;
+// use std::process;
 use std::ptr;
 
-pub fn isolate_environment() {
+pub fn isolate_environment() -> Result<(), &'static str> {
     let uid = unsafe { libc::getuid() };
     let gid = unsafe { libc::getgid() };
 
     unsafe {
         if unshare(CLONE_NEWUSER | CLONE_NEWNS) != 0 {
-            process::exit(1);
+            return Err("Capability cap_sys_admin missing (failed unshare)");
         }
 
         fs::write("/proc/self/setgroups", b"deny").ok();
@@ -39,7 +39,7 @@ pub fn isolate_environment() {
             ptr::null(),
         ) != 0
         {
-            process::exit(1);
+            return Err("Failed to mount private root");
         }
 
         let tmp_path = CString::new("/tmp").unwrap();
@@ -66,4 +66,5 @@ pub fn isolate_environment() {
             ptr::null(),
         );
     }
+    Ok(())
 }

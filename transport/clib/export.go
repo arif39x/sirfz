@@ -8,12 +8,14 @@ import "C"
 import "unsafe"
 
 //export StartNode
-func StartNode(isServer C.int, addr *C.char) C.int {
+func StartNode(isServer C.int, addr *C.char, authKey *C.uchar) C.int {
 	goAddr := C.GoString(addr)
+	authKeyBytes := C.GoBytes(unsafe.Pointer(authKey), 32)
+
 	if isServer == 1 {
-		return C.int(startServer(goAddr))
+		return C.int(startServer(goAddr, authKeyBytes))
 	}
-	return C.int(startClient(goAddr))
+	return C.int(startClient(goAddr, authKeyBytes))
 }
 
 //export SendMessage

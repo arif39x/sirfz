@@ -1,6 +1,4 @@
-use libc::{
-    tcgetattr, tcsetattr, termios, ECHO, ICANON, STDIN_FILENO, TCSANOW,
-};
+use libc::{tcgetattr, tcsetattr, termios, ECHO, ICANON, STDIN_FILENO, TCSANOW};
 use std::io::{self, Read};
 
 pub struct RawTerminal {
@@ -43,11 +41,18 @@ pub fn read_line_raw() -> String {
         match byte[0] {
             b'\n' | b'\r' => break,
             b'\x7f' | b'\x08' => {
-                buf.pop();
+                if !buf.is_empty() {
+                    buf.pop();
+                }
             }
             b => buf.push(b),
         }
     }
 
     String::from_utf8_lossy(&buf).into_owned()
+}
+
+pub fn read_pin_stealth() -> String {
+    let _raw = RawTerminal::enter();
+    read_line_raw()
 }
