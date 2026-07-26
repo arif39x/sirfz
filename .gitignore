@@ -6,8 +6,8 @@
 *.dll
 *.h
 
-# Rust (Hypervisor)
-/hypervisor/target/
+# Rust (Client)
+/client/target/
 **/*.rs.bk
 # Cargo.lock is optional to ignore for binaries, but we'll include it for a clean sweep if desired,
 # though we usually commit Cargo.lock for reproducibility. We will NOT ignore Cargo.lock.

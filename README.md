@@ -14,24 +14,24 @@ SIRFZ is a peer-to-peer chat terminal that maintains **zero persistent state**.
 
 ### 1. Build
 ```bash
-make all
+./build.sh
 ```
 
 ### 2. Apply Privileges
 Required for memory locking and namespaces.
 ```bash
-./hypervisor/setup_caps.sh
+./scripts/setup_caps.sh
 ```
 
 ### 3. Start
 **Server:**
 ```bash
-make run-server
+./build.sh run-server
 ```
 
 **Client:**
 ```bash
-make run-client
+./build.sh run-client
 ```
 
 ---
