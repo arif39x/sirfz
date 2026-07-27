@@ -4,18 +4,11 @@
 *.so
 *.dylib
 *.dll
-*.h
 
-# Rust (Client)
+# Rust build artifacts
 /client/target/
+/libtransport/target/
 **/*.rs.bk
-# Cargo.lock is optional to ignore for binaries, but we'll include it for a clean sweep if desired,
-# though we usually commit Cargo.lock for reproducibility. We will NOT ignore Cargo.lock.
-
-# Go (Transport)
-/transport/bin/
-/transport/vendor/
-/transport/go.sum
 
 # OS generated files
 .DS_Store
